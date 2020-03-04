@@ -677,6 +677,23 @@ INT64 WinToast::showToast(_In_ const WinToastTemplate& toast, _In_  IWinToastHan
                                 (toast.duration() == WinToastTemplate::Duration::Short) ? L"short" : L"long");
                         }
 
+                        if (SUCCEEDED(hr) && !toast.launch().empty()) {
+                            hr = setToastAttribute(xmlDocument.Get(), L"launch",
+                                toast.launch());
+                        }
+
+                        if (SUCCEEDED(hr) && toast.activationType() != WinToastTemplate_ActivationType::Default) {
+                            std::wstring text = toast.activationType() == WinToastTemplate_ActivationType::Foreground ?
+                                L"foreground" : 
+                                    toast.activationType() == WinToastTemplate_ActivationType::Background ?
+                                        L"background" :
+                                            toast.activationType() == WinToastTemplate_ActivationType::Protocol ? 
+                                                L"protocol" :
+                                                    toast.activationType() == WinToastTemplate_ActivationType::System ?
+                                                        L"system" :
+                                                            NULL;
+                            hr = setToastAttribute(xmlDocument.Get(), L"activationType", text);
+                        }
                     } else {
                         DEBUG_MSG("Modern features (Actions/Sounds/Attributes) not supported in this os version");
                     }
@@ -806,7 +823,9 @@ HRESULT WinToast::setAttributionTextFieldHelper(_In_ IXmlDocument *xml, _In_ con
     return hr;
 }
 
-HRESULT WinToast::addDurationHelper(_In_ IXmlDocument *xml, _In_ const std::wstring& duration) {
+HRESULT WinToast::setToastAttribute(_In_ IXmlDocument* xml,
+                                    _In_ const std::wstring& key,
+                                    _In_ const std::wstring& value) {
     ComPtr<IXmlNodeList> nodeList;
     HRESULT hr = xml->GetElementsByTagName(WinToastStringWrapper(L"toast").Get(), &nodeList);
     if (SUCCEEDED(hr)) {
@@ -819,13 +838,18 @@ HRESULT WinToast::addDurationHelper(_In_ IXmlDocument *xml, _In_ const std::wstr
                 ComPtr<IXmlElement> toastElement;
                 hr = toastNode.As(&toastElement);
                 if (SUCCEEDED(hr)) {
-                    hr = toastElement->SetAttribute(WinToastStringWrapper(L"duration").Get(),
-                                                    WinToastStringWrapper(duration).Get());
+                    hr = toastElement->SetAttribute(WinToastStringWrapper(key).Get(),
+                                                    WinToastStringWrapper(value).Get());
                 }
             }
         }
     }
     return hr;
+}
+
+HRESULT WinToast::addDurationHelper(_In_ IXmlDocument* xml,
+                                    _In_ const std::wstring& duration) {
+    return setToastAttribute(xml, L"duration", duration);
 }
 
 HRESULT WinToast::setTextFieldHelper(_In_ IXmlDocument *xml, _In_ const std::wstring& text, _In_ UINT32 pos) {
@@ -1073,6 +1097,14 @@ void WinToastTemplate::addAction(_In_ const std::wstring & label) {
 	_actions.push_back(label);
 }
 
+void WinToastTemplate::setLaunch(_In_ const std::wstring& launch) {
+    _launch = launch;
+}
+
+void WinToastTemplate::setActivationType(_In_ WinToastTemplate_ActivationType activationType) {
+    _activationType = activationType;
+}
+
 std::size_t WinToastTemplate::textFieldsCount() const {
     return _textFields.size();
 }
@@ -1110,6 +1142,14 @@ const std::wstring& WinToastTemplate::audioPath() const {
 
 const std::wstring& WinToastTemplate::attributionText() const {
     return _attributionText;
+}
+
+const std::wstring& WinToastTemplate::launch() const {
+    return _launch;
+}
+
+WinToastTemplate_ActivationType WinToastTemplate::activationType() const {
+    return _activationType;
 }
 
 INT64 WinToastTemplate::expiration() const {

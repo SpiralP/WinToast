@@ -61,6 +61,16 @@ namespace WinToastLib {
         virtual void toastFailed() const = 0;
     };
 
+
+    enum WinToastTemplate_ActivationType {
+        Default = 0,
+        Foreground,
+        Background,
+        Protocol,
+        System,
+    };
+    
+
     class WinToastTemplate {
     public:
         enum Duration { System, Short, Long };
@@ -122,6 +132,8 @@ namespace WinToastLib {
         void setDuration(_In_ Duration duration);
         void setExpiration(_In_ INT64 millisecondsFromNow);
         void addAction(_In_ const std::wstring& label);
+        void setLaunch(_In_ const std::wstring& launch);
+        void setActivationType(_In_ WinToastTemplate_ActivationType activationType);
 
         std::size_t textFieldsCount() const;
         std::size_t actionsCount() const;
@@ -136,6 +148,9 @@ namespace WinToastLib {
         WinToastTemplateType type() const;
         WinToastTemplate::AudioOption audioOption() const;
         Duration duration() const;
+        const std::wstring& launch() const;
+        WinToastTemplate_ActivationType activationType() const;
+
     private:
         std::vector<std::wstring>			_textFields{};
         std::vector<std::wstring>           _actions{};
@@ -146,6 +161,8 @@ namespace WinToastLib {
         AudioOption                         _audioOption{WinToastTemplate::AudioOption::Default};
         WinToastTemplateType                _type{WinToastTemplateType::Text01};
         Duration                            _duration{Duration::System};
+        std::wstring                        _launch{};
+        WinToastTemplate_ActivationType    _activationType{WinToastTemplate_ActivationType::Default};
     };
 
     class WinToast {
@@ -202,6 +219,9 @@ namespace WinToastLib {
         std::wstring                                    _aumi{};
         std::map<INT64, ComPtr<IToastNotification>>     _buffer{};
 
+        HRESULT setToastAttribute(_In_ IXmlDocument* xml,
+                                  _In_ const std::wstring& key,
+                                  _In_ const std::wstring& value);
         HRESULT validateShellLinkHelper(_Out_ bool& wasChanged);
         HRESULT createShellLinkHelper();
         HRESULT setImageFieldHelper(_In_ IXmlDocument *xml, _In_ const std::wstring& path);
